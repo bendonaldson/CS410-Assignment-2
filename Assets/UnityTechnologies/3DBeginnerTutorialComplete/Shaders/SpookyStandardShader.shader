@@ -70,14 +70,21 @@
 		o.Smoothness = _Glossiness;
 		o.Alpha = c.a;
 
-		half4 emission = tex2D(_EmissiveMap, IN.uv_MainTex) * _EmissiveColor;
-		o.Emission = emission.rgb;
+		// Calculate base emission from texture/color
+		half4 baseEmissionTex = tex2D(_EmissiveMap, IN.uv_MainTex) * _EmissiveColor;
 
+		// Calculate rim emission effect
 		fixed3 view = normalize(IN.viewDir);
 		fixed3 nml = o.Normal;
 		fixed VdN = dot(view, nml);
 		fixed rim = _RimBias - saturate(VdN);
-		o.Emission = (smoothstep(1 - _RimColor.rgb, _RimBias, (rim - rimMask)) * _RimPower) + emission;
+		fixed3 rimEmission = (smoothstep(1 - _RimColor.rgb, _RimBias, (rim - rimMask)) * _RimPower);
+
+		// Combine base and rim emission
+		fixed3 totalEmission = baseEmissionTex.rgb + rimEmission;
+
+		// *** Multiply final combined emission by the calculated alpha (c.a) ***
+		o.Emission = totalEmission * c.a;
 
 	}
 	ENDCG
